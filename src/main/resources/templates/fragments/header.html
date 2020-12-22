@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head">
+    <title>Eval ThymeLeaf</title>
+    <link rel="stylesheet" href="/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/font-awesome.css"/>
+    <script src="/webjars/jquery/3.5.1/jquery.min.js" type="application/javascript"></script>
+    <script src="/webjars/bootstrap/4.5.0/js/bootstrap.bundle.min.js" type="application/javascript"></script>
+</head>
+
+<div th:fragment="menu">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="http://localhost:5366/">MyAudioLibrary</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li><a href="/artists?page=0&amp;size=10&amp;sortProperty=name&amp;sortDirection=ASC" class="nav-link">Liste des artistes <span class="badge badge-primary" th:text="${@artistRepository.count()}">200</span></a></li>
+            </ul>
+
+            <form class="form-inline my-2 my-lg-0" role="search" action="/artists" method="GET">
+                <div class="form-group">
+                    <input name="name" class="form-control" placeholder="Rechercher par nom" type="text">
+                </div>
+                <button type="submit" class="btn btn-outline-success ml-2 my-2 my-sm-0">Rechercher</button>
+            </form>
+        </div>
+    </nav>
+</div>
+
+</html>

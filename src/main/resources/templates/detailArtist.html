@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/header :: head"></head>
+
+<body>
+	<div th:replace="fragments/header :: menu"></div>
+
+	<div class="container">
+		<h2>Détail de l'artiste [[${artist.name}]]</h2>
+
+		<div class="row">
+			<div class="col-lg-12">
+				<div class="form-group">
+					<label class="form-control-label">Nom</label>
+					<input form="form" name="name" type="text" id="name" class="ember-text-field form-control ember-view" maxlength="100" required th:value="${artist.name}">
+
+					<label class="form-control-label">Albums</label>
+					<form class="row" th:action="|/albums/${album.id}/delete|" method="post" th:each="album : ${artist.getAlbums()}">
+						<div class="col-10">
+							<div class="list-group">
+								<input type="text" class="list-group-item" th:value="${album.title}">
+							</div>
+						</div>
+						<div class="list-group text-center ml-2">
+							<button class="btn btn-danger"><span class="glyphicon glyphicon-remove">Delete</span></button>
+						</div>
+					</form>
+
+					<form class="row" action="/albums" method="post">
+						<div class="col-10">
+							<div class="list-group">
+								<input type="text" placeholder="Ajouter un album..." class="form-control ember-text-field ember-view" name="title">
+							</div>
+							<input type="hidden" name="artistId" th:value="${artist.id}">
+						</div>
+						<div class="list-group text-center ml-2">
+							<button class="btn btn-success"><span class="glyphicon glyphicon-plus">Ajouter</span></button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<form id="form" th:action="|/artists/${artist.getId()}/update|" method="post">
+				<button type="submit" class="btn btn-primary">Enregistrer</button>
+			</form>
+			<form th:action="|/artists/${artist.getId()}/delete|" method="post">
+				<button type="submit" class="btn btn-danger">Supprimer</button>
+			</form>
+		</div>
+
+	</div>
+</body>
+
+</html>
