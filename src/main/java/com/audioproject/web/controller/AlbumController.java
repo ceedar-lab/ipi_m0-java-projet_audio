@@ -5,51 +5,65 @@ import com.audioproject.web.model.Artist;
 import com.audioproject.web.repository.AlbumRepository;
 import com.audioproject.web.repository.ArtistRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 import javax.persistence.EntityExistsException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
-@RestController
+@Controller
 @RequestMapping("/albums")
 public class AlbumController {
 
     @Autowired
-    AlbumRepository albumRepository;
+    private AlbumRepository albumRepository;
     @Autowired
-    ArtistRepository artistRepository;
+    private ArtistRepository artistRepository;
 
     /**
      * Ajoute un album dans la base de données. L'album est obligatoirement rattaché à un artiste.
+     * @param id
+     * @param title
      * @param album
-     * @return Album. id, title et artist.
-     * @throws SQLIntegrityConstraintViolationException si l'utilisateur valide alors que le nom de l'album est null (ou qu'il commence par un espace).
+     * @return RedirectView. Redirection vers la page détail de l'artiste.
+     * @error 400 si le titre de l'album entré est null ou si sa longueur dépasse 100 caractères.
+     * @error 409 si l'album existe déjà.
      */
-    @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Album addAlbum(
-            @RequestBody Album album) throws SQLIntegrityConstraintViolationException {
-        String title = album.getTitle();
-        Artist artist = album.getArtist();
-        if (!title.matches("\\S.*")) {
+    @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public RedirectView addAlbum(
+            @RequestParam("artistId") Integer id,
+            @RequestParam("title") String title,
+            Album album) throws SQLIntegrityConstraintViolationException {
+        Optional<Artist> artistOptional = artistRepository.findById(id);
+        if (title.equals("") || title.length() > 100)
             throw new SQLIntegrityConstraintViolationException();
-        }
-        if (albumRepository.existsByArtistAndTitle(artist, title)) {
-            throw new EntityExistsException("L'album intitulé \"" +title+ "\" est déjà enregistré.");
-        }
-        return albumRepository.save(album);
+        if (albumRepository.existsByArtistAndTitle(artistOptional, title))
+            throw new EntityExistsException();
+        album.setArtist(artistOptional.get());
+        album.setTitle(title);
+        albumRepository.save(album);
+        return new RedirectView("/artists/" + id);
     }
 
     /**
-     * Supprime un album.
+     * Supprime un album de la base de donnée.
      * @param id
+     * @return RedirectView. Redirection vers la page de détails de l'artiste mise à jour.
+     * @error 404 si l'id n'est pas dans la base de données.
+     * @error 405 si l'utilisateur tente de supprimer avec une methode GET.
      */
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @DeleteMapping(value = "/{id}")
-    public void deleteAlbum(
-            @PathVariable Integer id) {
+    @PostMapping(value = "/{id}/delete")
+    public RedirectView deleteAlbums(
+            @PathVariable("id") Integer id) {
+        if (albumRepository.findById(id).isEmpty())
+            throw new NoSuchElementException();
+        Optional<Album> optionalAlbum =  albumRepository.findById(id);
+        Integer artistId = optionalAlbum.get().getArtist().getId();
         albumRepository.deleteById(id);
+        return new RedirectView("/artists/" + artistId);
     }
 }

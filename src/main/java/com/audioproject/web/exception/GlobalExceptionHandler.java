@@ -2,18 +2,42 @@ package com.audioproject.web.exception;
 
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
 
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityNotFoundException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    final String NO_ELEMENT = "L'élément n'existe pas.";
+    final String ELEMENT_EXISTS = "L'élément existe déjà.";
+    final String WRONG_LABEL = "Veuillez entrer un nom d'artiste ou un titre d'album correct.";
+    final String WRONG_PARAMETER = "Au moins un des paramètres est incorrect.";
+    final String UNAUTHORIZED = "Méthode non autorisée.";
+
+    /**
+     * Renvoie un code 404 si l'entité n'a pas été trouvée.
+     * @param e
+     * @return
+     */
+    @ExceptionHandler(NoSuchElementException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ModelAndView handleNoSuchElementException(NoSuchElementException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.NOT_FOUND);
+        modelAndView.addObject("error", NO_ELEMENT);
+        modelAndView.addObject("status", HttpStatus.NOT_FOUND.value());
+        return modelAndView;
+    }
 
     /**
      * Renvoie un code 404 si l'entité n'a pas été trouvée.
@@ -22,8 +46,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String handleEntityNotFoundException(EntityNotFoundException e) {
-        return e.getMessage();
+    public ModelAndView handleEntityNotFoundException(EntityNotFoundException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.NOT_FOUND);
+        modelAndView.addObject("error", NO_ELEMENT);
+        modelAndView.addObject("status", HttpStatus.NOT_FOUND);
+        return modelAndView;
     }
 
     /**
@@ -33,30 +60,25 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(EntityExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public String handleEntityExistsException(EntityExistsException e) {
-        return e.getMessage();
+    public ModelAndView handleEntityExistsException(EntityExistsException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.CONFLICT);
+        modelAndView.addObject("error", ELEMENT_EXISTS);
+        modelAndView.addObject("status", HttpStatus.CONFLICT.value());
+        return modelAndView;
     }
 
     /**
-     * Renvoie un code 400 si le champ est vide.
+     * Renvoie un code 400 si le champ est vide ou dépasse la longueur autorisée.
      * @param e
      * @return
      */
     @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleSQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException e) {
-        return "Ce champ ne peut être vide, et ne doit pas commencer par un espace.";
-    }
-
-    /**
-     * Renvoie un code 400 si la paramètre est incorrect.
-     * @param e
-     * @return
-     */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
-        return "Erreur 400 : Le paramètre '" +e.getParameterName()+ "' est incorrect.";
+    public ModelAndView handleSQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.BAD_REQUEST);
+        modelAndView.addObject("error", WRONG_LABEL);
+        modelAndView.addObject("status", HttpStatus.BAD_REQUEST.value());
+        return modelAndView;
     }
 
     /**
@@ -66,7 +88,26 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleIllegalArgumentException(IllegalArgumentException e) { return e.getMessage(); }
+    public ModelAndView handleIllegalArgumentException(IllegalArgumentException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.BAD_REQUEST);
+        modelAndView.addObject("error", WRONG_PARAMETER);
+        modelAndView.addObject("status", HttpStatus.BAD_REQUEST.value());
+        return modelAndView;
+    }
+
+    /**
+     * Renvoie un code 400 si le paramètre est incorrect.
+     * @param e
+     * @return
+     */
+    @ExceptionHandler(PropertyReferenceException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ModelAndView handlePropertyReferenceException(PropertyReferenceException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.BAD_REQUEST);
+        modelAndView.addObject("error", WRONG_PARAMETER);
+        modelAndView.addObject("status", HttpStatus.BAD_REQUEST.value());
+        return modelAndView;
+    }
 
     /**
      * Renvoie un code 400 si le type du paramètre est incorrect.
@@ -75,21 +116,24 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
-        String wantedType;
-        if (e.getRequiredType().getName().contains("Integer")) wantedType = "un nombre";
-        else wantedType = "une chaine de caractères";
-        return "Erreur 400 : Le paramètre " +e.getName()+ " de valeur '" +e.getValue()+ "' doit être " +wantedType+ ".";
+    public ModelAndView handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.BAD_REQUEST);
+        modelAndView.addObject("error", WRONG_PARAMETER);
+        modelAndView.addObject("status", HttpStatus.BAD_REQUEST.value());
+        return modelAndView;
     }
 
     /**
-     * Renvoie un code 400 si la propriété n'existe pas.
+     * Renvoie un code 405 si l'utilisateur appelle une méthode interdite.'
      * @param e
      * @return
      */
-    @ExceptionHandler(PropertyReferenceException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handlePropertyReferenceException(PropertyReferenceException e) {
-        return "Erreur 400 : La propriété '" +e.getPropertyName()+ "' n'existe pas.";
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public ModelAndView handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        ModelAndView modelAndView = new ModelAndView("error", HttpStatus.METHOD_NOT_ALLOWED);
+        modelAndView.addObject("error", UNAUTHORIZED);
+        modelAndView.addObject("status", HttpStatus.METHOD_NOT_ALLOWED.value());
+        return modelAndView;
     }
 }
